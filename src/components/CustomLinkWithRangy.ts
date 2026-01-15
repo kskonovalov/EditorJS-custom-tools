@@ -66,13 +66,13 @@ export default class CustomLinkWithRangy implements InlineTool {
   }
 
   public renderActions(): HTMLElement {
-    // Create container for input and unlink button
+    // Создать контейнер для input и кнопок
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '5px';
     
-    // Prevent clicks on wrapper from bubbling up
+    // Предотвратить всплытие кликов из wrapper
     wrapper.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
     });
@@ -81,7 +81,7 @@ export default class CustomLinkWithRangy implements InlineTool {
       event.stopPropagation();
     });
     
-    // Create apply button (checkmark)
+    // Создать кнопку применения (галочка)
     const applyButton = document.createElement('button');
     applyButton.type = 'button';
     applyButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -91,7 +91,7 @@ export default class CustomLinkWithRangy implements InlineTool {
     applyButton.style.background = 'transparent';
     applyButton.style.display = 'flex';
     applyButton.style.alignItems = 'center';
-    applyButton.style.color = '#52c41a'; // Green color for checkmark
+    applyButton.style.color = '#52c41a'; // Зеленый цвет для галочки
     applyButton.title = 'Apply link';
     applyButton.addEventListener('click', (event) => {
       event.preventDefault();
@@ -99,14 +99,14 @@ export default class CustomLinkWithRangy implements InlineTool {
       this.applyLink();
     });
     
-    // Create input
+    // Создать input
     const input = document.createElement('input') as HTMLInputElement;
     input.placeholder = this.i18n.t('Add a link');
     input.enterKeyHint = 'done';
     input.classList.add(this.CSS.input);
     input.style.flex = '1';
     
-    // Prevent input events from bubbling up and causing unwanted behavior
+    // Предотвратить всплытие событий input и нежелательное поведение
     input.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
     });
@@ -119,7 +119,7 @@ export default class CustomLinkWithRangy implements InlineTool {
       if (event.keyCode === this.ENTER_KEY) {
         this.enterPressed(event);
       }
-      // Don't let other key events bubble up
+      // Не позволять другим событиям клавиш всплывать
       event.stopPropagation();
     });
     
@@ -129,7 +129,7 @@ export default class CustomLinkWithRangy implements InlineTool {
     
     this.nodes.input = input;
     
-    // Create unlink button
+    // Создать кнопку удаления ссылки
     const unlinkButton = document.createElement('button');
     unlinkButton.type = 'button';
     unlinkButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -153,16 +153,14 @@ export default class CustomLinkWithRangy implements InlineTool {
     return wrapper;
   }
 
-  public surround(range: Range): void {
-    console.log('Link - surround called, inputOpened:', this.inputOpened, 'range:', range);
-    
-    // Just toggle the input field
-    // Link removal is now handled by the X button inside the input
+  public surround(): void {
+    // Просто переключить поле ввода
+    // Удаление ссылки теперь обрабатывается кнопкой X внутри input
     this.toggleActions();
   }
 
   public checkState(): boolean {
-    // Save selection using global manager (prevents multiple saves)
+    // Сохранить выделение с помощью глобального менеджера (предотвращает множественные сохранения)
     SelectionManager.saveSelection();
     
     const anchorTag = this.findParentTag('A');
@@ -191,10 +189,9 @@ export default class CustomLinkWithRangy implements InlineTool {
   }
 
   public clear(): void {
-    console.log('Link - clear called');
     this.closeActions();
     // DON'T clear global selection here - it's called too often
-    // SelectionManager will auto-clear when selection is restored/used
+    // SelectionManager автоматически очистит при восстановлении/использовании выделения
   }
 
   public get shortcut(): string {
@@ -224,8 +221,8 @@ export default class CustomLinkWithRangy implements InlineTool {
       this.nodes.input.classList.remove(this.CSS.inputShowed);
       this.nodes.input.value = '';
     }
-    // DON'T clear global selection - other tools might need it
-    // SelectionManager will auto-clear after use
+    // НЕ очищать глобальное выделение - другим инструментам может понадобиться
+    // SelectionManager автоматически очистит после использования
     this.inputOpened = false;
   }
 
@@ -244,17 +241,13 @@ export default class CustomLinkWithRangy implements InlineTool {
         message: 'Pasted link is not valid.',
         style: 'error',
       });
-      console.warn('Incorrect Link pasted', value);
       return;
     }
 
     value = this.prepareLink(value);
     
-    // Restore saved selection BEFORE inserting link
-    console.log('Link - applyLink: restoring selection before insert');
-    if (!SelectionManager.restoreSelection()) {
-      console.error('Link - applyLink: NO saved selection!');
-    }
+    // Восстановить сохраненное выделение ПЕРЕД вставкой ссылки
+    SelectionManager.restoreSelection();
 
     this.insertLinkWithRangy(value);
     
@@ -339,34 +332,28 @@ export default class CustomLinkWithRangy implements InlineTool {
 
     const sel = SelectionManager.getSelection();
     if (!sel || sel.rangeCount === 0) {
-      console.error('No selection found');
       return;
     }
 
     const rangyRange = SelectionManager.getRangeAt(0);
     
     if (!rangyRange) {
-      console.error('No range available');
       return;
     }
     
-    console.log('Range before split:', rangyRange);
-    console.log('Selected text:', rangyRange.toString());
     
-    // Split text nodes at range boundaries
+    // Разделить текстовые ноды на границах range
     SelectionManager.splitBoundaries(rangyRange);
     
-    console.log('Range after split:', rangyRange);
     
-    // STEP 1: Remove ALL existing <a> tags in the range to prevent nested links
-    const allNodes = SelectionManager.getNodes(rangyRange, [1]); // 1 = Element nodes
+    // ШАГ 1: Удалить ВСЕ существующие теги <a> в range для предотвращения вложенных ссылок
+    const allNodes = SelectionManager.getNodes(rangyRange, [1]); // 1 = узлы элементов
     const existingLinks = allNodes.filter((node: Node) => {
       return (node as HTMLElement).tagName === 'A';
     });
     
-    console.log('Found existing links to remove:', existingLinks.length);
     
-    // Unwrap each existing link (move children out, remove link tag)
+    // Развернуть каждую существующую ссылку (вынести детей, удалить тег ссылки)
     existingLinks.forEach(linkNode => {
       const parent = linkNode.parentNode;
       if (!parent) return;
@@ -377,17 +364,15 @@ export default class CustomLinkWithRangy implements InlineTool {
       parent.removeChild(linkNode);
     });
     
-    // STEP 2: Extract all contents from the range (preserves nested formatting like <b>, <i>, etc.)
+    // ШАГ 2: Извлечь все содержимое из range (сохраняет вложенное форматирование типа <b>, <i> и т.д.)
     const fragment = rangyRange.cloneContents();
     
-    console.log('Fragment extracted:', fragment);
     
     if (!fragment || fragment.childNodes.length === 0) {
-      console.error('No content in range');
       return;
     }
 
-    // STEP 3: Remove any remaining <a> tags from the fragment (just in case)
+    // ШАГ 3: Удалить все оставшиеся теги <a> из fragment (на всякий случай)
     const fragmentLinks = fragment.querySelectorAll('a');
     fragmentLinks.forEach(linkNode => {
       const parent = linkNode.parentNode;
@@ -399,29 +384,28 @@ export default class CustomLinkWithRangy implements InlineTool {
       }
     });
 
-    // STEP 4: Create ONE link element for entire selection
+    // ШАГ 4: Создать ОДНУ ссылку для всего выделения
     const a = document.createElement('a');
     a.href = link;
     a.target = '_blank';
     a.rel = 'nofollow';
     
-    // Move all fragment content into the single link
+    // Переместить все содержимое fragment в одну ссылку
     while (fragment.firstChild) {
       a.appendChild(fragment.firstChild);
     }
     
-    // STEP 5: Delete the original range content
+    // ШАГ 5: Удалить оригинальное содержимое range
     rangyRange.deleteContents();
     
-    // STEP 6: Insert the single link
+    // ШАГ 6: Вставить одну ссылку
     rangyRange.insertNode(a);
 
-    console.log('Link inserted successfully (single link wrapping entire selection)');
     
-    // Normalize formatting inside the link (merge adjacent identical tags)
+    // Нормализовать форматирование внутри ссылки (объединить соседние одинаковые теги)
     SelectionManager.normalizeFormatting(a);
     
-    // Select the newly created link
+    // Выделить только что созданную ссылку
     const nativeSel = window.getSelection();
     if (nativeSel) {
       const newRange = document.createRange();
@@ -430,15 +414,13 @@ export default class CustomLinkWithRangy implements InlineTool {
       nativeSel.removeAllRanges();
       nativeSel.addRange(newRange);
       
-      // Save this selection for Bold/Italic tools
-      console.log('Link - saving new selection on inserted link');
+      // Сохранить это выделение для инструментов Bold/Italic
       SelectionManager.clearSelection();
       SelectionManager.saveSelection();
     }
   }
 
   private removeLink(): void {
-    console.log('Link - removeLink called');
     
     const anchorTag = this.findParentTag('A');
     if (anchorTag) {

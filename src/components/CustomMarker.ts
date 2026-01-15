@@ -20,54 +20,43 @@ export default class CustomMarker implements InlineTool {
   }
 
   public surround(range: Range | null): void {
-    console.log('Marker - surround called with range:', range);
-    console.log('Marker - range text:', range?.toString());
     
-    // Prefer provided range if not collapsed (user made new selection)
+    // Предпочитать переданный range, если он не схлопнут (пользователь сделал новое выделение)
     if (range && !range.collapsed) {
-      console.log('Marker - Using provided range (new selection)');
       const nativeSel = window.getSelection();
       if (nativeSel) {
         nativeSel.removeAllRanges();
         nativeSel.addRange(range);
       }
-      // Clear old saved selection since we have a new one
+      // Очистить старое сохраненное выделение, так как есть новое
       SelectionManager.clearSelection();
     } else {
-      // Otherwise try to restore saved selection (first click after adding link)
-      console.log('Marker - Trying to restore saved selection');
+      // Иначе попытаться восстановить сохраненное выделение (первый клик после добавления ссылки)
       if (!SelectionManager.restoreSelection()) {
-        console.error('Marker - No selection available');
         return;
       }
     }
     
     const sel = SelectionManager.getSelection();
-    console.log('Marker - final rangy selection:', sel, 'rangeCount:', sel?.rangeCount);
     
     if (!sel || sel.rangeCount === 0) {
-      console.error('Marker - No selection available');
       return;
     }
 
     const rangyRange = SelectionManager.getRangeAt(0);
     
     if (!rangyRange || rangyRange.toString() === '') {
-      console.error('Marker - No valid range available');
       return;
     }
 
-    console.log('Marker - Range before split:', rangyRange.toString());
     
-    // Split text nodes at range boundaries
+    // Разделить текстовые ноды на границах range
     SelectionManager.splitBoundaries(rangyRange);
     
-    console.log('Marker - After splitBoundaries');
     
-    // Get all text nodes in range
+    // Получить все текстовые ноды в range
     const nodes = SelectionManager.getNodes(rangyRange, [3]);
     
-    console.log('Marker - Text nodes found:', nodes.length);
     
     if (nodes.length === 0) {
       return;
@@ -95,7 +84,6 @@ export default class CustomMarker implements InlineTool {
       }
     }
 
-    console.log('Marker - All nodes marked?', allMarked);
 
     const savedSel = SelectionManager.saveSelectionLocal();
 
@@ -105,11 +93,11 @@ export default class CustomMarker implements InlineTool {
         const node = nodes[i];
         const markParent = node.parentNode;
         
-        // Find immediate mark parent
+        // Найти непосредственного родителя mark
         if (markParent && (markParent as HTMLElement).tagName === 'MARK') {
           const grandparent = markParent.parentNode;
           grandparent?.insertBefore(node, markParent);
-          // Remove parent if empty
+          // Удалить родителя, если он пустой
           if (!markParent.hasChildNodes()) {
             grandparent?.removeChild(markParent);
           }
@@ -142,15 +130,15 @@ export default class CustomMarker implements InlineTool {
     SelectionManager.restoreSelectionLocal(savedSel);
     SelectionManager.removeMarkersLocal(savedSel);
     
-    // Clear global selection after applying format
+    // Очистить глобальное выделение после применения форматирования
     SelectionManager.clearSelection();
     
-    // Remove any leftover rangy markers from DOM
+    // Удалить все оставшиеся маркеры rangy из DOM
     SelectionManager.cleanupMarkers();
   }
 
   public checkState(): boolean {
-    // Save selection using global manager (prevents multiple saves)
+    // Сохранить выделение с помощью глобального менеджера (предотвращает множественные сохранения)
     SelectionManager.saveSelection();
     
     const sel = SelectionManager.getSelection();
@@ -171,7 +159,7 @@ export default class CustomMarker implements InlineTool {
   }
 
   public clear(): void {
-    // Only clear if there's no active selection
+    // Очистить только если нет активного выделения
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
       SelectionManager.clearSelection();

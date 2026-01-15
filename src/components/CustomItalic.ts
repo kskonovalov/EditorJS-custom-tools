@@ -20,17 +20,17 @@ export default class CustomItalic implements InlineTool {
   }
 
   public surround(range: Range | null): void {
-    // Prefer provided range if not collapsed (user made new selection)
+    // Предпочитать переданный range, если он не схлопнут (пользователь сделал новое выделение)
     if (range && !range.collapsed) {
       const nativeSel = window.getSelection();
       if (nativeSel) {
         nativeSel.removeAllRanges();
         nativeSel.addRange(range);
       }
-      // Clear old saved selection since we have a new one
+      // Очистить старое сохраненное выделение, так как есть новое
       SelectionManager.clearSelection();
     } else {
-      // Otherwise try to restore saved selection (first click after adding link)
+      // Иначе попытаться восстановить сохраненное выделение (первый клик после добавления ссылки)
       if (!SelectionManager.restoreSelection()) {
         return;
       }
@@ -48,17 +48,17 @@ export default class CustomItalic implements InlineTool {
       return;
     }
     
-    // Split text nodes at range boundaries
+    // Разделить текстовые ноды на границах range
     SelectionManager.splitBoundaries(rangyRange);
     
-    // Get all text nodes in range
+    // Получить все текстовые ноды в range
     const nodes = SelectionManager.getNodes(rangyRange, [3]);
     
     if (nodes.length === 0) {
       return;
     }
 
-    // Check if ALL nodes are already italic
+    // Проверить, все ли ноды уже курсивные
     let allItalic = true;
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
@@ -81,24 +81,24 @@ export default class CustomItalic implements InlineTool {
 
     const savedSel = SelectionManager.saveSelectionLocal();
 
-    // If all italic - remove italic from all nodes
+    // Если все курсивные - убрать курсив со всех нод
     if (allItalic) {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         const italicParent = node.parentNode;
         
-        // Find immediate italic parent
+        // Найти непосредственного курсивного родителя
         if (italicParent && ((italicParent as HTMLElement).tagName === 'I' || (italicParent as HTMLElement).tagName === 'EM')) {
           const grandparent = italicParent.parentNode;
           grandparent?.insertBefore(node, italicParent);
-          // Remove parent if empty
+          // Удалить родителя, если он пустой
           if (!italicParent.hasChildNodes()) {
             grandparent?.removeChild(italicParent);
           }
         }
       }
     } else {
-      // Otherwise - add italic to non-italic nodes
+      // Иначе - добавить курсив к не-курсивным нодам
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         let parent = node.parentNode;
@@ -123,15 +123,15 @@ export default class CustomItalic implements InlineTool {
     SelectionManager.restoreSelectionLocal(savedSel);
     SelectionManager.removeMarkersLocal(savedSel);
     
-    // Clear global selection after applying format
+    // Очистить глобальное выделение после применения форматирования
     SelectionManager.clearSelection();
     
-    // Remove any leftover rangy markers from DOM
+    // Удалить все оставшиеся маркеры rangy из DOM
     SelectionManager.cleanupMarkers();
   }
 
   public checkState(): boolean {
-    // Save selection using global manager (prevents multiple saves)
+    // Сохранить выделение с помощью глобального менеджера (предотвращает множественные сохранения)
     SelectionManager.saveSelection();
     
     const sel = SelectionManager.getSelection();
@@ -153,7 +153,7 @@ export default class CustomItalic implements InlineTool {
   }
 
   public clear(): void {
-    // Only clear if there's no active selection
+    // Очистить только если нет активного выделения
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
       SelectionManager.clearSelection();

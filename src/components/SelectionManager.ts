@@ -1,7 +1,7 @@
 /**
- * Global selection manager shared across all inline tools
- * Prevents multiple tools from saving selection simultaneously
- * Provides all rangy functionality through a unified API
+ * Глобальный менеджер выделения, общий для всех inline инструментов
+ * Предотвращает одновременное сохранение выделения несколькими инструментами
+ * Предоставляет всю функциональность rangy через единый API
  */
 class SelectionManager {
   private static savedSelection: unknown = null;
@@ -12,14 +12,14 @@ class SelectionManager {
   }
 
   /**
-   * Get rangy selection
+   * Получить выделение rangy
    */
   static getSelection() {
     return this.rangy?.getSelection();
   }
 
   /**
-   * Get range at index
+   * Получить range по индексу
    */
   static getRangeAt(index: number) {
     const sel = this.getSelection();
@@ -27,7 +27,7 @@ class SelectionManager {
   }
 
   /**
-   * Split text nodes at range boundaries
+   * Разделить текстовые ноды на границах range
    */
   static splitBoundaries(range: unknown) {
     if (range && typeof range === 'object' && 'splitBoundaries' in range) {
@@ -36,7 +36,7 @@ class SelectionManager {
   }
 
   /**
-   * Get nodes from range
+   * Получить ноды из range
    */
   static getNodes(range: unknown, nodeTypes?: number[]): Node[] {
     if (range && typeof range === 'object' && 'getNodes' in range) {
@@ -46,20 +46,20 @@ class SelectionManager {
   }
 
   /**
-   * Save selection locally (returns saved selection object)
+   * Сохранить выделение локально (возвращает объект сохраненного выделения)
    */
   static saveSelectionLocal() {
     return this.rangy?.saveSelection();
   }
 
   /**
-   * Restore local selection
+   * Восстановить локальное выделение
    */
   static restoreSelectionLocal(savedSel: unknown) {
     if (savedSel && this.rangy) {
       this.rangy.restoreSelection(savedSel);
       
-      // After restoring selection, normalize formatting to merge adjacent identical tags
+      // После восстановления выделения нормализовать форматирование для объединения соседних одинаковых тегов
       const sel = this.rangy.getSelection();
       if (sel && sel.rangeCount > 0) {
         const range = sel.getRangeAt(0);
@@ -69,7 +69,7 @@ class SelectionManager {
   }
 
   /**
-   * Remove markers from local selection
+   * Удалить маркеры из локального выделения
    */
   static removeMarkersLocal(savedSel: unknown) {
     if (savedSel && this.rangy) {
@@ -78,7 +78,7 @@ class SelectionManager {
   }
 
   /**
-   * Save global selection (for cross-tool usage)
+   * Сохранить глобальное выделение (для использования между инструментами)
    */
   static saveSelection(): boolean {
     if (!this.rangy) {
@@ -90,30 +90,26 @@ class SelectionManager {
       return false;
     }
 
-    // CRITICAL FIX: If already saved, clear old selection first
-    // This prevents the bug where a new selection is ignored because isSaved is still true
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если уже сохранено, сначала очистить старое выделение
+    // Это предотвращает баг, когда новое выделение игнорируется, потому что isSaved всё ещё true
     if (this.isSaved && this.savedSelection) {
-      console.log('SelectionManager: clearing old selection before saving new one');
       this.rangy.removeMarkers(this.savedSelection);
       this.savedSelection = null;
     }
 
-    console.log('SelectionManager: saving selection');
     this.isSaved = true;
     this.savedSelection = this.rangy.saveSelection();
     return true;
   }
 
   /**
-   * Restore global selection
+   * Восстановить глобальное выделение
    */
   static restoreSelection(): boolean {
     if (!this.savedSelection || !this.rangy) {
-      console.error('SelectionManager: no saved selection to restore');
       return false;
     }
 
-    console.log('SelectionManager: restoring selection');
     this.rangy.restoreSelection(this.savedSelection);
     this.rangy.removeMarkers(this.savedSelection);
     this.savedSelection = null;
@@ -122,7 +118,7 @@ class SelectionManager {
   }
 
   /**
-   * Clear global selection
+   * Очистить глобальное выделение
    */
   static clearSelection(): void {
     if (this.savedSelection && this.rangy) {
@@ -131,32 +127,32 @@ class SelectionManager {
     this.savedSelection = null;
     this.isSaved = false;
     
-    // Also remove any leftover markers from DOM
+    // Также удалить все оставшиеся маркеры из DOM
     document.querySelectorAll('.rangySelectionBoundary').forEach(el => el.remove());
   }
 
   /**
-   * Check if global selection is saved
+   * Проверить, сохранено ли глобальное выделение
    */
   static hasSavedSelection(): boolean {
     return this.isSaved;
   }
 
   /**
-   * Remove all rangy markers from DOM
+   * Удалить все маркеры rangy из DOM
    */
   static cleanupMarkers(): void {
     document.querySelectorAll('.rangySelectionBoundary').forEach(el => el.remove());
   }
 
   /**
-   * Normalize formatting - merge adjacent identical tags and text nodes
-   * This fixes the issue where splitBoundaries creates multiple separate tags
+   * Нормализовать форматирование - объединить соседние одинаковые теги и текстовые ноды
+   * Это исправляет проблему, когда splitBoundaries создает множество отдельных тегов
    */
   static normalizeFormatting(container?: Node): void {
     const searchRoot = container || document.body;
     
-    // Find the paragraph/div containing the selection
+    // Найти параграф/div, содержащий выделение
     let targetElement: HTMLElement | null = null;
     
     if ((searchRoot as HTMLElement).tagName === 'DIV' || (searchRoot as HTMLElement).tagName === 'P') {
@@ -167,10 +163,10 @@ class SelectionManager {
     
     if (!targetElement) return;
     
-    // Normalize text nodes first (merge adjacent text nodes)
+    // Сначала нормализовать текстовые ноды (объединить соседние текстовые ноды)
     targetElement.normalize();
     
-    // Merge adjacent identical formatting tags
+    // Объединить соседние одинаковые теги форматирования
     const formattingTags = ['B', 'STRONG', 'I', 'EM', 'MARK', 'U', 'CODE'];
     
     formattingTags.forEach(tagName => {
@@ -180,35 +176,33 @@ class SelectionManager {
         const current = elements[i];
         let next = current.nextSibling;
         
-        // Skip whitespace/empty text nodes
+        // Пропустить пробельные/пустые текстовые ноды
         while (next && next.nodeType === Node.TEXT_NODE && (!next.textContent || next.textContent.trim() === '')) {
           const temp = next;
           next = next.nextSibling;
           temp.parentNode?.removeChild(temp);
         }
         
-        // If next is the same tag type, merge them
+        // Если следующий элемент того же типа, объединить их
         if (next && (next as HTMLElement).tagName === tagName) {
-          console.log(`SelectionManager - Merging adjacent ${tagName} tags`);
-          
-          // Move all children from next to current
+          // Переместить всех детей из next в current
           while (next.firstChild) {
             current.appendChild(next.firstChild);
           }
           
-          // Remove empty next tag
+          // Удалить пустой next тег
           next.parentNode?.removeChild(next);
           
-          // Re-check from current position (there might be more to merge)
+          // Перепроверить с текущей позиции (может быть больше для объединения)
           i--;
           
-          // Update elements array
+          // Обновить массив элементов
           elements = Array.from(targetElement!.querySelectorAll(tagName));
         }
       }
     });
     
-    // Normalize again after merging tags
+    // Нормализовать снова после объединения тегов
     targetElement.normalize();
   }
 }

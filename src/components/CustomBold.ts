@@ -20,65 +20,45 @@ export default class CustomBold implements InlineTool {
   }
 
   public surround(range: Range | null): void {
-    console.log('Bold - surround called with range:', range);
-    console.log('Bold - range text:', range?.toString());
-    
-    // Prefer provided range if not collapsed (user made new selection)
+    // Предпочитать переданный range, если он не схлопнут (пользователь сделал новое выделение)
     if (range && !range.collapsed) {
-      console.log('Bold - Using provided range (new selection)');
       const nativeSel = window.getSelection();
       if (nativeSel) {
         nativeSel.removeAllRanges();
         nativeSel.addRange(range);
       }
-      // Clear old saved selection since we have a new one
+      // Очистить старое сохраненное выделение, так как есть новое
       SelectionManager.clearSelection();
     } else {
-      // Otherwise try to restore saved selection (first click after adding link)
-      console.log('Bold - Trying to restore saved selection');
+      // Иначе попытаться восстановить сохраненное выделение (первый клик после добавления ссылки)
       if (!SelectionManager.restoreSelection()) {
-        console.error('Bold - No selection available');
         return;
       }
     }
     
     const sel = SelectionManager.getSelection();
-    console.log('Bold - final rangy selection:', sel, 'rangeCount:', sel?.rangeCount);
     
     if (!sel || sel.rangeCount === 0) {
-      console.error('Bold - No selection available');
       return;
     }
 
     const rangyRange = SelectionManager.getRangeAt(0);
     
     if (!rangyRange || rangyRange.toString() === '') {
-      console.error('Bold - No valid range available');
       return;
     }
 
-    console.log('Bold - Range before split:', rangyRange.toString());
-    console.log('Bold - Range startContainer:', rangyRange.startContainer);
-    console.log('Bold - Range endContainer:', rangyRange.endContainer);
-    
-    // Split text nodes at range boundaries
+    // Разделить текстовые ноды на границах range
     SelectionManager.splitBoundaries(rangyRange);
     
-    console.log('Bold - After splitBoundaries');
-    
-    // Get all text nodes in range
+    // Получить все текстовые ноды в range
     const nodes = SelectionManager.getNodes(rangyRange, [3]);
-    
-    console.log('Bold - Text nodes found:', nodes.length);
-    nodes.forEach((node: Node, i: number) => {
-      console.log(`Bold - Node ${i}:`, node, 'parent:', node.parentNode, 'text:', node.textContent);
-    });
     
     if (nodes.length === 0) {
       return;
     }
 
-    // Check if ALL nodes are already bold
+    // Проверить, все ли ноды уже жирные
     let allBold = true;
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
@@ -100,28 +80,26 @@ export default class CustomBold implements InlineTool {
       }
     }
 
-    console.log('Bold - All nodes bold?', allBold);
-
     const savedSel = SelectionManager.saveSelectionLocal();
 
-    // If all bold - remove bold from all nodes
+    // Если все жирные - убрать жирность со всех нод
     if (allBold) {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         const boldParent = node.parentNode;
         
-        // Find immediate bold parent
+        // Найти непосредственного жирного родителя
         if (boldParent && ((boldParent as HTMLElement).tagName === 'B' || (boldParent as HTMLElement).tagName === 'STRONG')) {
           const grandparent = boldParent.parentNode;
           grandparent?.insertBefore(node, boldParent);
-          // Remove parent if empty
+          // Удалить родителя, если он пустой
           if (!boldParent.hasChildNodes()) {
             grandparent?.removeChild(boldParent);
           }
         }
       }
     } else {
-      // Otherwise - add bold to non-bold nodes
+      // Иначе - добавить жирность к не-жирным нодам
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         let alreadyBold = false;
@@ -146,15 +124,15 @@ export default class CustomBold implements InlineTool {
     SelectionManager.restoreSelectionLocal(savedSel);
     SelectionManager.removeMarkersLocal(savedSel);
     
-    // Clear global selection after applying format
+    // Очистить глобальное выделение после применения форматирования
     SelectionManager.clearSelection();
     
-    // Remove any leftover rangy markers from DOM
+    // Удалить все оставшиеся маркеры rangy из DOM
     SelectionManager.cleanupMarkers();
   }
 
   public checkState(): boolean {
-    // Save selection using global manager (prevents multiple saves)
+    // Сохранить выделение с помощью глобального менеджера (предотвращает множественные сохранения)
     SelectionManager.saveSelection();
     
     const sel = SelectionManager.getSelection();
@@ -176,7 +154,7 @@ export default class CustomBold implements InlineTool {
   }
 
   public clear(): void {
-    // Only clear if there's no active selection
+    // Очистить только если нет активного выделения
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
       SelectionManager.clearSelection();

@@ -21,7 +21,6 @@ export default class CustomClearFormat implements InlineTool {
   }
 
   public surround(range: Range | null): void {
-    console.log('ClearFormat - surround called');
     
     // Prefer provided range if not collapsed
     if (range && !range.collapsed) {
@@ -33,7 +32,6 @@ export default class CustomClearFormat implements InlineTool {
       SelectionManager.clearSelection();
     } else {
       if (!SelectionManager.restoreSelection()) {
-        console.error('ClearFormat - No selection available');
         return;
       }
     }
@@ -50,17 +48,15 @@ export default class CustomClearFormat implements InlineTool {
       return;
     }
 
-    console.log('ClearFormat - clearing format from:', rangyRange.toString());
     
-    // Split text nodes at range boundaries
+    // Разделить текстовые ноды на границах range
     SelectionManager.splitBoundaries(rangyRange);
     
     const savedSel = SelectionManager.saveSelectionLocal();
     
-    // Get all text nodes in range
-    const textNodes = SelectionManager.getNodes(rangyRange, [3]); // 3 = text nodes
+    // Получить все текстовые ноды в range
+    const textNodes = SelectionManager.getNodes(rangyRange, [3]); // 3 = текстовые ноды
     
-    console.log('ClearFormat - Text nodes found:', textNodes.length);
     
     if (textNodes.length === 0) {
       SelectionManager.restoreSelectionLocal(savedSel);
@@ -100,7 +96,6 @@ export default class CustomClearFormat implements InlineTool {
       }
     });
     
-    console.log('ClearFormat - Elements to remove:', elementsToProcess.size);
     
     // Unwrap all collected elements
     elementsToProcess.forEach(element => {
@@ -139,7 +134,7 @@ export default class CustomClearFormat implements InlineTool {
   }
 
   public clear(): void {
-    // Only clear if there's no active selection
+    // Очистить только если нет активного выделения
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
       SelectionManager.clearSelection();
