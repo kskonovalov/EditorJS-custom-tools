@@ -146,8 +146,8 @@ export default class CustomLinkWithRangy implements InlineTool {
       this.removeLink();
     });
     
-    wrapper.appendChild(applyButton);
     wrapper.appendChild(input);
+    wrapper.appendChild(applyButton);
     wrapper.appendChild(unlinkButton);
     
     return wrapper;
@@ -417,6 +417,9 @@ export default class CustomLinkWithRangy implements InlineTool {
     rangyRange.insertNode(a);
 
     console.log('Link inserted successfully (single link wrapping entire selection)');
+    
+    // Normalize formatting inside the link (merge adjacent identical tags)
+    SelectionManager.normalizeFormatting(a);
     
     // Select the newly created link
     const nativeSel = window.getSelection();

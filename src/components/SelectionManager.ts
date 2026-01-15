@@ -58,6 +58,13 @@ class SelectionManager {
   static restoreSelectionLocal(savedSel: unknown) {
     if (savedSel && this.rangy) {
       this.rangy.restoreSelection(savedSel);
+      
+      // After restoring selection, normalize formatting to merge adjacent identical tags
+      const sel = this.rangy.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        this.normalizeFormatting(range.commonAncestorContainer);
+      }
     }
   }
 
@@ -133,6 +140,69 @@ class SelectionManager {
    */
   static cleanupMarkers(): void {
     document.querySelectorAll('.rangySelectionBoundary').forEach(el => el.remove());
+  }
+
+  /**
+   * Normalize formatting - merge adjacent identical tags and text nodes
+   * This fixes the issue where splitBoundaries creates multiple separate tags
+   */
+  static normalizeFormatting(container?: Node): void {
+    const searchRoot = container || document.body;
+    
+    // Find the paragraph/div containing the selection
+    let targetElement: HTMLElement | null = null;
+    
+    if ((searchRoot as HTMLElement).tagName === 'DIV' || (searchRoot as HTMLElement).tagName === 'P') {
+      targetElement = searchRoot as HTMLElement;
+    } else if (searchRoot.parentElement) {
+      targetElement = searchRoot.parentElement;
+    }
+    
+    if (!targetElement) return;
+    
+    // Normalize text nodes first (merge adjacent text nodes)
+    targetElement.normalize();
+    
+    // Merge adjacent identical formatting tags
+    const formattingTags = ['B', 'STRONG', 'I', 'EM', 'MARK', 'U', 'CODE'];
+    
+    formattingTags.forEach(tagName => {
+      let elements = Array.from(targetElement!.querySelectorAll(tagName));
+      
+      for (let i = 0; i < elements.length; i++) {
+        const current = elements[i];
+        let next = current.nextSibling;
+        
+        // Skip whitespace/empty text nodes
+        while (next && next.nodeType === Node.TEXT_NODE && (!next.textContent || next.textContent.trim() === '')) {
+          const temp = next;
+          next = next.nextSibling;
+          temp.parentNode?.removeChild(temp);
+        }
+        
+        // If next is the same tag type, merge them
+        if (next && (next as HTMLElement).tagName === tagName) {
+          console.log(`SelectionManager - Merging adjacent ${tagName} tags`);
+          
+          // Move all children from next to current
+          while (next.firstChild) {
+            current.appendChild(next.firstChild);
+          }
+          
+          // Remove empty next tag
+          next.parentNode?.removeChild(next);
+          
+          // Re-check from current position (there might be more to merge)
+          i--;
+          
+          // Update elements array
+          elements = Array.from(targetElement!.querySelectorAll(tagName));
+        }
+      }
+    });
+    
+    // Normalize again after merging tags
+    targetElement.normalize();
   }
 }
 
