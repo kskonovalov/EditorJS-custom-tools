@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
-import EditorJS from "./components/EditorJS/src/codex";
+// import EditorJS from "./components/EditorJS/src/codex";
+import EditorJS from "@editorjs/editorjs";
 import CustomBold from "./components/CustomBold";
 import CustomItalic from "./components/CustomItalic";
 import CustomLinkWithRangy from "./components/CustomLinkWithRangy";
+import CustomClearFormat from "./components/CustomClearFormat";
 import "./components/EditorJS/src/styles/main.css";
 import "./App.css";
 
@@ -18,6 +20,7 @@ function App() {
           bold: CustomBold,
           italic: CustomItalic,
           link: CustomLinkWithRangy,
+          clearFormat: CustomClearFormat,
         },
       });
 

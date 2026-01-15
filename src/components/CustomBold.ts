@@ -178,6 +178,14 @@ export default class CustomBold implements InlineTool {
     return false;
   }
 
+  public clear(): void {
+    // Only clear if there's no active selection
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      SelectionManager.clearSelection();
+    }
+  }
+
   public get shortcut(): string {
     return 'CMD+B';
   }
