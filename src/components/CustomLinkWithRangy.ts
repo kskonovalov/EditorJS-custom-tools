@@ -307,6 +307,28 @@ export default class CustomLinkWithRangy implements InlineTool {
     
     console.log('Range after split:', rangyRange);
     
+    // First, unwrap all existing <a> tags in the range to prevent nested links
+    const allNodes = SelectionManager.getNodes(rangyRange, [1]); // 1 = Element nodes
+    const existingLinks = allNodes.filter((node: Node) => {
+      return (node as HTMLElement).tagName === 'A';
+    });
+    
+    console.log('Found existing links to unwrap:', existingLinks.length);
+    
+    // Manually unwrap each link
+    existingLinks.forEach(link => {
+      const parent = link.parentNode;
+      if (!parent) return;
+      
+      // Move all children out of the link
+      while (link.firstChild) {
+        parent.insertBefore(link.firstChild, link);
+      }
+      
+      // Remove the empty link
+      parent.removeChild(link);
+    });
+    
     // Extract all contents from the range (preserves nested formatting)
     const fragment = rangyRange.cloneContents();
     
@@ -316,6 +338,18 @@ export default class CustomLinkWithRangy implements InlineTool {
       console.error('No content in range');
       return;
     }
+
+    // Remove any <a> tags from the fragment (shouldn't be needed after unwrapping, but just in case)
+    const fragmentLinks = fragment.querySelectorAll('a');
+    fragmentLinks.forEach(link => {
+      const parent = link.parentNode;
+      if (parent) {
+        while (link.firstChild) {
+          parent.insertBefore(link.firstChild, link);
+        }
+        parent.removeChild(link);
+      }
+    });
 
     // Create ONE link element
     const a = document.createElement('a');
