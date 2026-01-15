@@ -358,65 +358,79 @@ export default class CustomLinkWithRangy implements InlineTool {
     
     console.log('Range after split:', rangyRange);
     
-    // Get all text nodes in range BEFORE saving selection
-    const nodes = SelectionManager.getNodes(rangyRange, [3]);
+    // STEP 1: Remove ALL existing <a> tags in the range to prevent nested links
+    const allNodes = SelectionManager.getNodes(rangyRange, [1]); // 1 = Element nodes
+    const existingLinks = allNodes.filter((node: Node) => {
+      return (node as HTMLElement).tagName === 'A';
+    });
     
-    console.log('Text nodes found:', nodes.length, nodes);
+    console.log('Found existing links to remove:', existingLinks.length);
     
-    if (nodes.length === 0) {
-      console.error('No text nodes found in range');
+    // Unwrap each existing link (move children out, remove link tag)
+    existingLinks.forEach(linkNode => {
+      const parent = linkNode.parentNode;
+      if (!parent) return;
+      
+      while (linkNode.firstChild) {
+        parent.insertBefore(linkNode.firstChild, linkNode);
+      }
+      parent.removeChild(linkNode);
+    });
+    
+    // STEP 2: Extract all contents from the range (preserves nested formatting like <b>, <i>, etc.)
+    const fragment = rangyRange.cloneContents();
+    
+    console.log('Fragment extracted:', fragment);
+    
+    if (!fragment || fragment.childNodes.length === 0) {
+      console.error('No content in range');
       return;
     }
 
-    // Wrap each text node and collect created links
-    const createdLinks: HTMLAnchorElement[] = [];
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      
-      // Check if already in <a>
-      let parent = node.parentNode;
-      let alreadyLinked = false;
-      while (parent) {
-        if ((parent as HTMLElement).tagName === 'A') {
-          alreadyLinked = true;
-          break;
+    // STEP 3: Remove any remaining <a> tags from the fragment (just in case)
+    const fragmentLinks = fragment.querySelectorAll('a');
+    fragmentLinks.forEach(linkNode => {
+      const parent = linkNode.parentNode;
+      if (parent) {
+        while (linkNode.firstChild) {
+          parent.insertBefore(linkNode.firstChild, linkNode);
         }
-        parent = parent.parentNode;
+        parent.removeChild(linkNode);
       }
-      
-      if (!alreadyLinked) {
-        const a = document.createElement('a');
-        a.href = link;
-        a.target = '_blank';
-        a.rel = 'nofollow';
-        node.parentNode?.insertBefore(a, node);
-        a.appendChild(node);
-        createdLinks.push(a);
-      }
-    }
+    });
 
-    console.log('Link inserted successfully');
+    // STEP 4: Create ONE link element for entire selection
+    const a = document.createElement('a');
+    a.href = link;
+    a.target = '_blank';
+    a.rel = 'nofollow';
     
-    // Keep selection on the linked text AND save it for other tools
-    if (createdLinks.length > 0) {
-      const firstLink = createdLinks[0];
-      const lastLink = createdLinks[createdLinks.length - 1];
+    // Move all fragment content into the single link
+    while (fragment.firstChild) {
+      a.appendChild(fragment.firstChild);
+    }
+    
+    // STEP 5: Delete the original range content
+    rangyRange.deleteContents();
+    
+    // STEP 6: Insert the single link
+    rangyRange.insertNode(a);
+
+    console.log('Link inserted successfully (single link wrapping entire selection)');
+    
+    // Select the newly created link
+    const nativeSel = window.getSelection();
+    if (nativeSel) {
+      const newRange = document.createRange();
+      newRange.selectNodeContents(a);
       
-      // Create new range selecting the links
-      const nativeSel = window.getSelection();
-      if (nativeSel) {
-        const newRange = document.createRange();
-        newRange.setStart(firstLink, 0);
-        newRange.setEnd(lastLink, lastLink.childNodes.length);
-        
-        nativeSel.removeAllRanges();
-        nativeSel.addRange(newRange);
-        
-        // Save this selection for Bold/Italic tools
-        console.log('Link - saving new selection on inserted link');
-        SelectionManager.clearSelection(); // Clear old markers first
-        SelectionManager.saveSelection();
-      }
+      nativeSel.removeAllRanges();
+      nativeSel.addRange(newRange);
+      
+      // Save this selection for Bold/Italic tools
+      console.log('Link - saving new selection on inserted link');
+      SelectionManager.clearSelection();
+      SelectionManager.saveSelection();
     }
   }
 
