@@ -307,65 +307,48 @@ export default class CustomLinkWithRangy implements InlineTool {
     
     console.log('Range after split:', rangyRange);
     
-    // Get all text nodes in range BEFORE saving selection
-    const nodes = SelectionManager.getNodes(rangyRange, [3]);
+    // Extract all contents from the range (preserves nested formatting)
+    const fragment = rangyRange.cloneContents();
     
-    console.log('Text nodes found:', nodes.length, nodes);
+    console.log('Fragment extracted:', fragment);
     
-    if (nodes.length === 0) {
-      console.error('No text nodes found in range');
+    if (!fragment || fragment.childNodes.length === 0) {
+      console.error('No content in range');
       return;
     }
 
-    // Wrap each text node and collect created links
-    const createdLinks: HTMLAnchorElement[] = [];
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      
-      // Check if already in <a>
-      let parent = node.parentNode;
-      let alreadyLinked = false;
-      while (parent) {
-        if ((parent as HTMLElement).tagName === 'A') {
-          alreadyLinked = true;
-          break;
-        }
-        parent = parent.parentNode;
-      }
-      
-      if (!alreadyLinked) {
-        const a = document.createElement('a');
-        a.href = link;
-        a.target = '_blank';
-        a.rel = 'nofollow';
-        node.parentNode?.insertBefore(a, node);
-        a.appendChild(node);
-        createdLinks.push(a);
-      }
+    // Create ONE link element
+    const a = document.createElement('a');
+    a.href = link;
+    a.target = '_blank';
+    a.rel = 'nofollow';
+    
+    // Move all fragment content into the link
+    while (fragment.firstChild) {
+      a.appendChild(fragment.firstChild);
     }
+    
+    // Delete the original range content
+    rangyRange.deleteContents();
+    
+    // Insert the link
+    rangyRange.insertNode(a);
 
     console.log('Link inserted successfully');
     
-    // Keep selection on the linked text AND save it for other tools
-    if (createdLinks.length > 0) {
-      const firstLink = createdLinks[0];
-      const lastLink = createdLinks[createdLinks.length - 1];
+    // Select the newly created link
+    const nativeSel = window.getSelection();
+    if (nativeSel) {
+      const newRange = document.createRange();
+      newRange.selectNodeContents(a);
       
-      // Create new range selecting the links
-      const nativeSel = window.getSelection();
-      if (nativeSel) {
-        const newRange = document.createRange();
-        newRange.setStart(firstLink, 0);
-        newRange.setEnd(lastLink, lastLink.childNodes.length);
-        
-        nativeSel.removeAllRanges();
-        nativeSel.addRange(newRange);
-        
-        // Save this selection for Bold/Italic tools
-        console.log('Link - saving new selection on inserted link');
-        SelectionManager.clearSelection(); // Clear old markers first
-        SelectionManager.saveSelection();
-      }
+      nativeSel.removeAllRanges();
+      nativeSel.addRange(newRange);
+      
+      // Save this selection for Bold/Italic tools
+      console.log('Link - saving new selection on inserted link');
+      SelectionManager.clearSelection(); // Clear old markers first
+      SelectionManager.saveSelection();
     }
   }
 
