@@ -85,16 +85,14 @@ class SelectionManager {
       return false;
     }
 
+    // Если уже сохранено, не сохранять снова (предотвращает бесконечную регенерацию маркеров)
+    if (this.isSaved) {
+      return true;
+    }
+
     const sel = this.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
       return false;
-    }
-
-    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если уже сохранено, сначала очистить старое выделение
-    // Это предотвращает баг, когда новое выделение игнорируется, потому что isSaved всё ещё true
-    if (this.isSaved && this.savedSelection) {
-      this.rangy.removeMarkers(this.savedSelection);
-      this.savedSelection = null;
     }
 
     this.isSaved = true;

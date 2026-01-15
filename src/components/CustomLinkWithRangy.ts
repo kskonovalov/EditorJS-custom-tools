@@ -171,7 +171,8 @@ export default class CustomLinkWithRangy implements InlineTool {
         this.nodes.button.classList.add(this.CSS.buttonUnlink);
         this.nodes.button.classList.add(this.CSS.buttonActive);
       }
-      this.openActions();
+      // Не визуально оборачивать если уже внутри ссылки
+      this.openActions(false, true);
 
       const hrefAttr = anchorTag.getAttribute('href');
       if (this.nodes.input) {
@@ -206,7 +207,7 @@ export default class CustomLinkWithRangy implements InlineTool {
     }
   }
 
-  private openActions(needFocus = false): void {
+  private openActions(needFocus = false, skipVisualWrap = false): void {
     if (this.nodes.input) {
       this.nodes.input.classList.add(this.CSS.inputShowed);
       if (needFocus) {
@@ -214,6 +215,11 @@ export default class CustomLinkWithRangy implements InlineTool {
       }
     }
     this.inputOpened = true;
+    
+    // Визуально обозначить выделение пока открыт input (но не для существующих ссылок)
+    if (!skipVisualWrap) {
+      this.wrapSelectionVisually();
+    }
   }
 
   private closeActions(): void {
@@ -224,6 +230,9 @@ export default class CustomLinkWithRangy implements InlineTool {
     // НЕ очищать глобальное выделение - другим инструментам может понадобиться
     // SelectionManager автоматически очистит после использования
     this.inputOpened = false;
+    
+    // Удалить визуальную обертку
+    this.unwrapVisibleSelection();
   }
 
   private applyLink(): void {
@@ -322,7 +331,81 @@ export default class CustomLinkWithRangy implements InlineTool {
     }
   }
 
+  /**
+   * Обернуть текущее выделение в span с классом visibleselection для визуального отображения
+   * Использует rangy маркеры для определения границ выделения
+   */
+  private wrapSelectionVisually(): void {
+    // Найти rangy маркеры выделения в DOM
+    const markers = document.querySelectorAll('.rangySelectionBoundary');
+    
+    if (markers.length < 2) {
+      return;
+    }
+
+    const startMarker = markers[0];
+    const endMarker = markers[markers.length - 1];
+    
+    if (!startMarker || !endMarker || !startMarker.parentNode) {
+      return;
+    }
+
+    try {
+      // Создать range между маркерами
+      const range = document.createRange();
+      range.setStartAfter(startMarker);
+      range.setEndBefore(endMarker);
+      
+      // Извлечь содержимое между маркерами
+      const contents = range.extractContents();
+      
+      // Создать визуальный span
+      const visualSpan = document.createElement('span');
+      visualSpan.className = 'visibleselection';
+      visualSpan.style.backgroundColor = 'rgba(82, 196, 26, 0.2)';
+      visualSpan.style.borderRadius = '2px';
+      
+      // Поместить содержимое в span
+      visualSpan.appendChild(contents);
+      
+      // Вставить span обратно в DOM между маркерами
+      range.insertNode(visualSpan);
+      
+    } catch (err) {
+      // Игнорировать ошибки
+    }
+  }
+
+  /**
+   * Удалить все span.visibleselection, оставив их содержимое
+   */
+  private unwrapVisibleSelection(): void {
+    const visibleSpans = document.querySelectorAll('span.visibleselection');
+    
+    visibleSpans.forEach(span => {
+      const parent = span.parentNode;
+      if (!parent) return;
+      
+      // Вынести всех детей из span
+      while (span.firstChild) {
+        parent.insertBefore(span.firstChild, span);
+      }
+      
+      // Удалить пустой span
+      parent.removeChild(span);
+    });
+    
+    // Нормализовать текстовые ноды после удаления span
+    const contentEditable = document.querySelector('[contenteditable="true"]');
+    if (contentEditable) {
+      (contentEditable as HTMLElement).normalize();
+    }
+  }
+
   private insertLinkWithRangy(link: string): void {
+    // Удалить визуальную обертку перед вставкой ссылки
+    this.unwrapVisibleSelection();
+    
     const anchorTag = this.findParentTag('A');
 
     if (anchorTag && anchorTag instanceof HTMLAnchorElement) {
@@ -421,6 +504,8 @@ export default class CustomLinkWithRangy implements InlineTool {
   }
 
   private removeLink(): void {
+    // Удалить визуальную обертку перед удалением ссылки
+    this.unwrapVisibleSelection();
     
     const anchorTag = this.findParentTag('A');
     if (anchorTag) {
