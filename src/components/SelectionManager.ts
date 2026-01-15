@@ -81,14 +81,21 @@ class SelectionManager {
    * Save global selection (for cross-tool usage)
    */
   static saveSelection(): boolean {
-    // Only save if not already saved and rangy is available
-    if (this.isSaved || !this.rangy) {
+    if (!this.rangy) {
       return false;
     }
 
     const sel = this.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
       return false;
+    }
+
+    // CRITICAL FIX: If already saved, clear old selection first
+    // This prevents the bug where a new selection is ignored because isSaved is still true
+    if (this.isSaved && this.savedSelection) {
+      console.log('SelectionManager: clearing old selection before saving new one');
+      this.rangy.removeMarkers(this.savedSelection);
+      this.savedSelection = null;
     }
 
     console.log('SelectionManager: saving selection');
