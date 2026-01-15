@@ -81,6 +81,24 @@ export default class CustomLinkWithRangy implements InlineTool {
       event.stopPropagation();
     });
     
+    // Create apply button (checkmark)
+    const applyButton = document.createElement('button');
+    applyButton.type = 'button';
+    applyButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    applyButton.style.padding = '5px';
+    applyButton.style.cursor = 'pointer';
+    applyButton.style.border = 'none';
+    applyButton.style.background = 'transparent';
+    applyButton.style.display = 'flex';
+    applyButton.style.alignItems = 'center';
+    applyButton.style.color = '#52c41a'; // Green color for checkmark
+    applyButton.title = 'Apply link';
+    applyButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.applyLink();
+    });
+    
     // Create input
     const input = document.createElement('input') as HTMLInputElement;
     input.placeholder = this.i18n.t('Add a link');
@@ -128,6 +146,7 @@ export default class CustomLinkWithRangy implements InlineTool {
       this.removeLink();
     });
     
+    wrapper.appendChild(applyButton);
     wrapper.appendChild(input);
     wrapper.appendChild(unlinkButton);
     
@@ -210,13 +229,12 @@ export default class CustomLinkWithRangy implements InlineTool {
     this.inputOpened = false;
   }
 
-  private enterPressed(event: KeyboardEvent): void {
+  private applyLink(): void {
     let value = this.nodes.input?.value || '';
 
     if (!value.trim()) {
       SelectionManager.restoreSelection();
       this.unlink();
-      event.preventDefault();
       this.closeActions();
       return;
     }
@@ -233,19 +251,12 @@ export default class CustomLinkWithRangy implements InlineTool {
     value = this.prepareLink(value);
     
     // Restore saved selection BEFORE inserting link
-    console.log('Link - enterPressed: restoring selection before insert');
+    console.log('Link - applyLink: restoring selection before insert');
     if (!SelectionManager.restoreSelection()) {
-      console.error('Link - enterPressed: NO saved selection!');
+      console.error('Link - applyLink: NO saved selection!');
     }
 
     this.insertLinkWithRangy(value);
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    
-    // Don't close actions here - let it close naturally
-    // this.closeActions(false);
     
     const sel = SelectionManager.getSelection();
     if (sel) {
@@ -253,6 +264,14 @@ export default class CustomLinkWithRangy implements InlineTool {
     }
     
     this.inlineToolbar.close();
+  }
+
+  private enterPressed(event: KeyboardEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    
+    this.applyLink();
   }
 
   private validateURL(str: string): boolean {
