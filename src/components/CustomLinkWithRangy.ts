@@ -56,10 +56,6 @@ export default class CustomLinkWithRangy implements InlineTool {
     this.i18n = api.i18n;
   }
 
-  private get rangy() {
-    return window.rangy;
-  }
-
   public render(): HTMLElement {
     const button = document.createElement('button') as HTMLButtonElement;
     button.type = 'button';
@@ -219,7 +215,7 @@ export default class CustomLinkWithRangy implements InlineTool {
     // Don't close actions here - let it close naturally
     // this.closeActions(false);
     
-    const sel = this.rangy.getSelection();
+    const sel = SelectionManager.getSelection();
     if (sel) {
       sel.collapseToEnd();
     }
@@ -273,12 +269,12 @@ export default class CustomLinkWithRangy implements InlineTool {
   }
 
   private expandToTag(element: HTMLElement): void {
-    const sel = this.rangy.getSelection();
+    const sel = SelectionManager.getSelection();
     if (!sel) return;
 
-    const range = this.rangy.getSelection()?.getRangeAt(0);
-    if (range) {
-      range.selectNode(element);
+    const range = SelectionManager.getRangeAt(0);
+    if (range && typeof range === 'object' && 'selectNode' in range) {
+      (range as { selectNode: (node: Node) => void }).selectNode(element);
     }
   }
 
@@ -290,24 +286,29 @@ export default class CustomLinkWithRangy implements InlineTool {
       return;
     }
 
-    const sel = this.rangy.getSelection();
+    const sel = SelectionManager.getSelection();
     if (!sel || sel.rangeCount === 0) {
       console.error('No selection found');
       return;
     }
 
-    const rangyRange = sel.getRangeAt(0);
+    const rangyRange = SelectionManager.getRangeAt(0);
+    
+    if (!rangyRange) {
+      console.error('No range available');
+      return;
+    }
     
     console.log('Range before split:', rangyRange);
     console.log('Selected text:', rangyRange.toString());
     
     // Split text nodes at range boundaries
-    rangyRange.splitBoundaries();
+    SelectionManager.splitBoundaries(rangyRange);
     
     console.log('Range after split:', rangyRange);
     
     // Get all text nodes in range BEFORE saving selection
-    const nodes = rangyRange.getNodes([3]);
+    const nodes = SelectionManager.getNodes(rangyRange, [3]);
     
     console.log('Text nodes found:', nodes.length, nodes);
     

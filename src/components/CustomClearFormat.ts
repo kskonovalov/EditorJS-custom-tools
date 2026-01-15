@@ -9,10 +9,6 @@ export default class CustomClearFormat implements InlineTool {
   private button: HTMLButtonElement | null = null;
   private iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M16 6l3 3m-1.5-1.5L9 16l-3 1 1-3 8.5-8.5z"/><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M10 14l-4 4m8-12L6 14"/></svg>';
 
-  private get rangy() {
-    return window.rangy;
-  }
-
   constructor() {}
 
   public render(): HTMLElement {
@@ -42,13 +38,13 @@ export default class CustomClearFormat implements InlineTool {
       }
     }
     
-    const sel = this.rangy.getSelection();
+    const sel = SelectionManager.getSelection();
     
     if (!sel || sel.rangeCount === 0) {
       return;
     }
 
-    const rangyRange = sel.getRangeAt(0);
+    const rangyRange = SelectionManager.getRangeAt(0);
     
     if (!rangyRange || rangyRange.toString() === '') {
       return;
@@ -57,18 +53,18 @@ export default class CustomClearFormat implements InlineTool {
     console.log('ClearFormat - clearing format from:', rangyRange.toString());
     
     // Split text nodes at range boundaries
-    rangyRange.splitBoundaries();
+    SelectionManager.splitBoundaries(rangyRange);
     
-    const savedSel = this.rangy.saveSelection();
+    const savedSel = SelectionManager.saveSelectionLocal();
     
     // Get all text nodes in range
-    const textNodes = rangyRange.getNodes([3]); // 3 = text nodes
+    const textNodes = SelectionManager.getNodes(rangyRange, [3]); // 3 = text nodes
     
     console.log('ClearFormat - Text nodes found:', textNodes.length);
     
     if (textNodes.length === 0) {
-      this.rangy.restoreSelection(savedSel);
-      this.rangy.removeMarkers(savedSel);
+      SelectionManager.restoreSelectionLocal(savedSel);
+      SelectionManager.removeMarkersLocal(savedSel);
       return;
     }
 
@@ -112,20 +108,17 @@ export default class CustomClearFormat implements InlineTool {
     });
 
     // Restore selection first
-    this.rangy.restoreSelection(savedSel);
+    SelectionManager.restoreSelectionLocal(savedSel);
     
     // Remove markers from the saved selection
-    this.rangy.removeMarkers(savedSel);
+    SelectionManager.removeMarkersLocal(savedSel);
     
     // Clear global selection manager
     SelectionManager.clearSelection();
     
     // Force remove any leftover rangy markers from DOM
     setTimeout(() => {
-      document.querySelectorAll('.rangySelectionBoundary').forEach(el => {
-        console.log('ClearFormat - removing leftover marker:', el);
-        el.remove();
-      });
+      SelectionManager.cleanupMarkers();
     }, 0);
   }
 

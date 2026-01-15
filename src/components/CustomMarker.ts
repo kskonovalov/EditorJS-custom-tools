@@ -9,10 +9,6 @@ export default class CustomMarker implements InlineTool {
   private button: HTMLButtonElement | null = null;
   private iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><rect width="14" height="10" x="5" y="7" stroke="currentColor" stroke-width="2" rx="3"/><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M9 12h6"/></svg>';
 
-  private get rangy() {
-    return window.rangy;
-  }
-
   constructor() {}
 
   public render(): HTMLElement {
@@ -46,7 +42,7 @@ export default class CustomMarker implements InlineTool {
       }
     }
     
-    const sel = this.rangy.getSelection();
+    const sel = SelectionManager.getSelection();
     console.log('Marker - final rangy selection:', sel, 'rangeCount:', sel?.rangeCount);
     
     if (!sel || sel.rangeCount === 0) {
@@ -54,7 +50,7 @@ export default class CustomMarker implements InlineTool {
       return;
     }
 
-    const rangyRange = sel.getRangeAt(0);
+    const rangyRange = SelectionManager.getRangeAt(0);
     
     if (!rangyRange || rangyRange.toString() === '') {
       console.error('Marker - No valid range available');
@@ -64,12 +60,12 @@ export default class CustomMarker implements InlineTool {
     console.log('Marker - Range before split:', rangyRange.toString());
     
     // Split text nodes at range boundaries
-    rangyRange.splitBoundaries();
+    SelectionManager.splitBoundaries(rangyRange);
     
     console.log('Marker - After splitBoundaries');
     
     // Get all text nodes in range
-    const nodes = rangyRange.getNodes([3]);
+    const nodes = SelectionManager.getNodes(rangyRange, [3]);
     
     console.log('Marker - Text nodes found:', nodes.length);
     
@@ -101,7 +97,7 @@ export default class CustomMarker implements InlineTool {
 
     console.log('Marker - All nodes marked?', allMarked);
 
-    const savedSel = this.rangy.saveSelection();
+    const savedSel = SelectionManager.saveSelectionLocal();
 
     // If all marked - remove mark from all nodes
     if (allMarked) {
@@ -143,21 +139,21 @@ export default class CustomMarker implements InlineTool {
       }
     }
 
-    this.rangy.restoreSelection(savedSel);
-    this.rangy.removeMarkers(savedSel);
+    SelectionManager.restoreSelectionLocal(savedSel);
+    SelectionManager.removeMarkersLocal(savedSel);
     
     // Clear global selection after applying format
     SelectionManager.clearSelection();
     
     // Remove any leftover rangy markers from DOM
-    document.querySelectorAll('.rangySelectionBoundary').forEach(el => el.remove());
+    SelectionManager.cleanupMarkers();
   }
 
   public checkState(): boolean {
     // Save selection using global manager (prevents multiple saves)
     SelectionManager.saveSelection();
     
-    const sel = this.rangy.getSelection();
+    const sel = SelectionManager.getSelection();
     if (!sel || sel.rangeCount === 0) {
       return false;
     }
