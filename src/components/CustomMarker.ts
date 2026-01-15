@@ -1,13 +1,13 @@
 import type { InlineTool } from '@editorjs/editorjs';
 import SelectionManager from './SelectionManager';
 
-export default class CustomItalic implements InlineTool {
+export default class CustomMarker implements InlineTool {
   public static isInline = true;
-  public static title = 'Italic';
-  public static shortcut = 'CMD+I';
+  public static title = 'Marker';
+  public static shortcut = 'CMD+SHIFT+M';
 
   private button: HTMLButtonElement | null = null;
-  private iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" d="M11 7L13 7m-6 10h6m-4 0l4-10"/></svg>';
+  private iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><rect width="14" height="10" x="5" y="7" stroke="currentColor" stroke-width="2" rx="3"/><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M9 12h6"/></svg>';
 
   private get rangy() {
     return window.rangy;
@@ -24,8 +24,12 @@ export default class CustomItalic implements InlineTool {
   }
 
   public surround(range: Range | null): void {
+    console.log('Marker - surround called with range:', range);
+    console.log('Marker - range text:', range?.toString());
+    
     // Prefer provided range if not collapsed (user made new selection)
     if (range && !range.collapsed) {
+      console.log('Marker - Using provided range (new selection)');
       const nativeSel = window.getSelection();
       if (nativeSel) {
         nativeSel.removeAllRanges();
@@ -35,91 +39,106 @@ export default class CustomItalic implements InlineTool {
       SelectionManager.clearSelection();
     } else {
       // Otherwise try to restore saved selection (first click after adding link)
+      console.log('Marker - Trying to restore saved selection');
       if (!SelectionManager.restoreSelection()) {
+        console.error('Marker - No selection available');
         return;
       }
     }
     
     const sel = this.rangy.getSelection();
+    console.log('Marker - final rangy selection:', sel, 'rangeCount:', sel?.rangeCount);
     
     if (!sel || sel.rangeCount === 0) {
+      console.error('Marker - No selection available');
       return;
     }
 
     const rangyRange = sel.getRangeAt(0);
     
     if (!rangyRange || rangyRange.toString() === '') {
+      console.error('Marker - No valid range available');
       return;
     }
+
+    console.log('Marker - Range before split:', rangyRange.toString());
     
     // Split text nodes at range boundaries
     rangyRange.splitBoundaries();
     
+    console.log('Marker - After splitBoundaries');
+    
     // Get all text nodes in range
     const nodes = rangyRange.getNodes([3]);
+    
+    console.log('Marker - Text nodes found:', nodes.length);
     
     if (nodes.length === 0) {
       return;
     }
 
-    // Check if ALL nodes are already italic
-    let allItalic = true;
+    // Check if ALL nodes are already marked
+    let allMarked = true;
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i];
-      let parent = node.parentNode;
-      let isItalic = false;
+      const parent = node.parentNode;
+      let isMarked = false;
+      let currentParent = parent;
       
-      while (parent) {
-        if ((parent as HTMLElement).tagName === 'I' || (parent as HTMLElement).tagName === 'EM') {
-          isItalic = true;
+      while (currentParent) {
+        if ((currentParent as HTMLElement).tagName === 'MARK') {
+          isMarked = true;
           break;
         }
-        parent = parent.parentNode;
+        currentParent = currentParent.parentNode;
       }
       
-      if (!isItalic) {
-        allItalic = false;
+      if (!isMarked) {
+        allMarked = false;
         break;
       }
     }
 
+    console.log('Marker - All nodes marked?', allMarked);
+
     const savedSel = this.rangy.saveSelection();
 
-    // If all italic - remove italic from all nodes
-    if (allItalic) {
+    // If all marked - remove mark from all nodes
+    if (allMarked) {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
-        const italicParent = node.parentNode;
+        const markParent = node.parentNode;
         
-        // Find immediate italic parent
-        if (italicParent && ((italicParent as HTMLElement).tagName === 'I' || (italicParent as HTMLElement).tagName === 'EM')) {
-          const grandparent = italicParent.parentNode;
-          grandparent?.insertBefore(node, italicParent);
+        // Find immediate mark parent
+        if (markParent && (markParent as HTMLElement).tagName === 'MARK') {
+          const grandparent = markParent.parentNode;
+          grandparent?.insertBefore(node, markParent);
           // Remove parent if empty
-          if (!italicParent.hasChildNodes()) {
-            grandparent?.removeChild(italicParent);
+          if (!markParent.hasChildNodes()) {
+            grandparent?.removeChild(markParent);
           }
         }
       }
     } else {
-      // Otherwise - add italic to non-italic nodes
+      // Otherwise - add mark to non-marked nodes
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
-        let parent = node.parentNode;
-        let alreadyItalic = false;
+        let alreadyMarked = false;
+        let currentParent = node.parentNode;
         
-        while (parent) {
-          if ((parent as HTMLElement).tagName === 'I' || (parent as HTMLElement).tagName === 'EM') {
-            alreadyItalic = true;
+        while (currentParent) {
+          if ((currentParent as HTMLElement).tagName === 'MARK') {
+            alreadyMarked = true;
             break;
           }
-          parent = parent.parentNode;
+          currentParent = currentParent.parentNode;
         }
         
-        if (!alreadyItalic) {
-          const i = document.createElement('i');
-          node.parentNode?.insertBefore(i, node);
-          i.appendChild(node);
+        if (!alreadyMarked) {
+          const mark = document.createElement('mark');
+          mark.className = 'cdx-marker';
+          node.parentNode?.insertBefore(mark, node);
+          mark.appendChild(node);
         }
       }
     }
@@ -144,10 +163,9 @@ export default class CustomItalic implements InlineTool {
     }
 
     const anchorNode = sel.getRangeAt(0).startContainer;
-    const italicTag = this.findParentTag('I', anchorNode as HTMLElement) || 
-                      this.findParentTag('EM', anchorNode as HTMLElement);
+    const markTag = this.findParentTag('MARK', anchorNode as HTMLElement);
 
-    if (italicTag) {
+    if (markTag) {
       this.button?.classList.add('ce-inline-tool--active');
       return true;
     }
@@ -165,13 +183,14 @@ export default class CustomItalic implements InlineTool {
   }
 
   public get shortcut(): string {
-    return 'CMD+I';
+    return 'CMD+SHIFT+M';
   }
 
   public static get sanitize() {
     return {
-      i: {},
-      em: {},
+      mark: {
+        class: 'cdx-marker',
+      },
     };
   }
 

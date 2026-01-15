@@ -1,9 +1,10 @@
-import type { InlineTool } from './EditorJS/types';
+import type { InlineTool } from '@editorjs/editorjs';
 import SelectionManager from './SelectionManager';
 
 export default class CustomClearFormat implements InlineTool {
   public static isInline = true;
   public static title = 'Clear Format';
+  public static shortcut = 'CMD+\\';
 
   private button: HTMLButtonElement | null = null;
   private iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M16 6l3 3m-1.5-1.5L9 16l-3 1 1-3 8.5-8.5z"/><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M10 14l-4 4m8-12L6 14"/></svg>';

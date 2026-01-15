@@ -5,6 +5,7 @@ import CustomBold from "./components/CustomBold";
 import CustomItalic from "./components/CustomItalic";
 import CustomLinkWithRangy from "./components/CustomLinkWithRangy";
 import CustomClearFormat from "./components/CustomClearFormat";
+import CustomMarker from "./components/CustomMarker";
 import "./components/EditorJS/src/styles/main.css";
 import "./App.css";
 
@@ -20,6 +21,7 @@ function App() {
           bold: CustomBold,
           italic: CustomItalic,
           link: CustomLinkWithRangy,
+          marker: CustomMarker,
           clearFormat: CustomClearFormat,
         },
       });

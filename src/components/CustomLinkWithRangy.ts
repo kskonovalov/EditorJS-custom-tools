@@ -1,12 +1,11 @@
-import * as _ from './EditorJS/src/components/utils';
-import type { InlineTool, SanitizerConfig, API } from './EditorJS/types';
-import type { Notifier, Toolbar, I18n, InlineToolbar } from './EditorJS/types/api';
+import type { InlineTool, SanitizerConfig, API } from '@editorjs/editorjs';
 import { IconLink, IconUnlink } from '@codexteam/icons';
 import SelectionManager from './SelectionManager';
 
 export default class CustomLinkWithRangy implements InlineTool {
   public static isInline = true;
   public static title = 'Link';
+  public static shortcut = 'CMD+K';
 
   public static get sanitize(): SanitizerConfig {
     return {
@@ -45,10 +44,10 @@ export default class CustomLinkWithRangy implements InlineTool {
     };
 
   private inputOpened = false;
-  private toolbar: Toolbar;
-  private inlineToolbar: InlineToolbar;
-  private notifier: Notifier;
-  private i18n: I18n;
+  private toolbar: API['toolbar'];
+  private inlineToolbar: API['inlineToolbar'];
+  private notifier: API['notifier'];
+  private i18n: API['i18n'];
 
   constructor({ api }: { api: API }) {
     this.toolbar = api.toolbar;
@@ -199,7 +198,7 @@ export default class CustomLinkWithRangy implements InlineTool {
         message: 'Pasted link is not valid.',
         style: 'error',
       });
-      _.log('Incorrect Link pasted', 'warn', value);
+      console.warn('Incorrect Link pasted', value);
       return;
     }
 

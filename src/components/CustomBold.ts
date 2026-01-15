@@ -1,9 +1,10 @@
-import type { InlineTool } from './EditorJS/types';
+import type { InlineTool } from '@editorjs/editorjs';
 import SelectionManager from './SelectionManager';
 
 export default class CustomBold implements InlineTool {
   public static isInline = true;
   public static title = 'Bold';
+  public static shortcut = 'CMD+B';
 
   private button: HTMLButtonElement | null = null;
   private iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" d="M9 7h9.5a3.5 3.5 0 1 1 0 7H9m0-7H6.5m2.5 0v14m0-7h9.5m-9.5 7h9.5a3.5 3.5 0 1 1 0-7M9 21H6.5"/></svg>';
