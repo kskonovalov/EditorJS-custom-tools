@@ -13,11 +13,6 @@ export default class InlineToolAdapter extends BaseToolAdapter<ToolType.Inline, 
   public type: ToolType.Inline = ToolType.Inline;
 
   /**
-   * Tool's constructable blueprint
-   */
-  protected constructable: InlineToolConstructable;
-
-  /**
    * Returns title for Inline Tool if specified by user
    */
   public get title(): string {

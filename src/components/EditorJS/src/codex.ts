@@ -5,7 +5,7 @@ import type { EditorConfig } from "../types";
 /**
  * Apply polyfills
  */
-import "@babel/register";
+// import "@babel/register"; // Not needed in Vite
 
 import "./components/polyfills";
 import Core from "./components/core";

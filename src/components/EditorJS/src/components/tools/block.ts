@@ -45,11 +45,6 @@ export default class BlockToolAdapter
     new ToolsCollection<BlockTuneAdapter>();
 
   /**
-   * Tool's constructable blueprint
-   */
-  protected constructable: BlockToolConstructable;
-
-  /**
    * Creates new Tool instance
    *
    * @param data - Tool data

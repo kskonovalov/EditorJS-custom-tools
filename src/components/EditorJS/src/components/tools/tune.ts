@@ -16,11 +16,6 @@ export default class BlockTuneAdapter extends BaseToolAdapter<ToolType.Tune, IBl
   public type: ToolType.Tune = ToolType.Tune;
 
   /**
-   * Tool's constructable blueprint
-   */
-  protected readonly constructable: BlockTuneConstructable;
-
-  /**
    * Constructs new BlockTune instance from constructable
    *
    * @param data - Tune data
