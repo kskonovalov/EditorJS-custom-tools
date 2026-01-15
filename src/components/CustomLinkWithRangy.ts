@@ -66,47 +66,53 @@ export default class CustomLinkWithRangy implements InlineTool {
   }
 
   public renderActions(): HTMLElement {
+    // Create container for input and unlink button
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '5px';
+    
+    // Create input
     const input = document.createElement('input') as HTMLInputElement;
     input.placeholder = this.i18n.t('Add a link');
     input.enterKeyHint = 'done';
     input.classList.add(this.CSS.input);
+    input.style.flex = '1';
     input.addEventListener('keydown', (event: KeyboardEvent) => {
       if (event.keyCode === this.ENTER_KEY) {
         this.enterPressed(event);
       }
     });
     this.nodes.input = input;
-    return input;
+    
+    // Create unlink button
+    const unlinkButton = document.createElement('button');
+    unlinkButton.type = 'button';
+    unlinkButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+    unlinkButton.style.padding = '5px';
+    unlinkButton.style.cursor = 'pointer';
+    unlinkButton.style.border = 'none';
+    unlinkButton.style.background = 'transparent';
+    unlinkButton.style.display = 'flex';
+    unlinkButton.style.alignItems = 'center';
+    unlinkButton.title = 'Remove link';
+    unlinkButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.removeLink();
+    });
+    
+    wrapper.appendChild(input);
+    wrapper.appendChild(unlinkButton);
+    
+    return wrapper;
   }
 
   public surround(range: Range): void {
-    console.log('Link - surround called, inputOpened:', this.inputOpened);
+    console.log('Link - surround called, inputOpened:', this.inputOpened, 'range:', range);
     
-    // Check if clicking on existing link to unlink
-    if (range && !this.inputOpened) {
-      const parentAnchor = this.findParentTag('A');
-
-      if (parentAnchor) {
-        // Restore selection before unlinking
-        SelectionManager.restoreSelection();
-        
-        this.expandToTag(parentAnchor);
-        this.unlink();
-        this.closeActions();
-        this.checkState();
-        this.toolbar.close();
-        return;
-      }
-    }
-
-    // If input is opened, just close it (clicking on another tool)
-    if (this.inputOpened) {
-      console.log('Link - closing input, NOT restoring selection (another tool will use it)');
-      this.closeActions();
-      return;
-    }
-
-    // Otherwise toggle input to add new link
+    // Just toggle the input field
+    // Link removal is now handled by the X button inside the input
     this.toggleActions();
   }
 
@@ -307,82 +313,87 @@ export default class CustomLinkWithRangy implements InlineTool {
     
     console.log('Range after split:', rangyRange);
     
-    // First, unwrap all existing <a> tags in the range to prevent nested links
-    const allNodes = SelectionManager.getNodes(rangyRange, [1]); // 1 = Element nodes
-    const existingLinks = allNodes.filter((node: Node) => {
-      return (node as HTMLElement).tagName === 'A';
-    });
+    // Get all text nodes in range BEFORE saving selection
+    const nodes = SelectionManager.getNodes(rangyRange, [3]);
     
-    console.log('Found existing links to unwrap:', existingLinks.length);
+    console.log('Text nodes found:', nodes.length, nodes);
     
-    // Manually unwrap each link
-    existingLinks.forEach(link => {
-      const parent = link.parentNode;
-      if (!parent) return;
-      
-      // Move all children out of the link
-      while (link.firstChild) {
-        parent.insertBefore(link.firstChild, link);
-      }
-      
-      // Remove the empty link
-      parent.removeChild(link);
-    });
-    
-    // Extract all contents from the range (preserves nested formatting)
-    const fragment = rangyRange.cloneContents();
-    
-    console.log('Fragment extracted:', fragment);
-    
-    if (!fragment || fragment.childNodes.length === 0) {
-      console.error('No content in range');
+    if (nodes.length === 0) {
+      console.error('No text nodes found in range');
       return;
     }
 
-    // Remove any <a> tags from the fragment (shouldn't be needed after unwrapping, but just in case)
-    const fragmentLinks = fragment.querySelectorAll('a');
-    fragmentLinks.forEach(link => {
-      const parent = link.parentNode;
-      if (parent) {
-        while (link.firstChild) {
-          parent.insertBefore(link.firstChild, link);
+    // Wrap each text node and collect created links
+    const createdLinks: HTMLAnchorElement[] = [];
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      
+      // Check if already in <a>
+      let parent = node.parentNode;
+      let alreadyLinked = false;
+      while (parent) {
+        if ((parent as HTMLElement).tagName === 'A') {
+          alreadyLinked = true;
+          break;
         }
-        parent.removeChild(link);
+        parent = parent.parentNode;
       }
-    });
-
-    // Create ONE link element
-    const a = document.createElement('a');
-    a.href = link;
-    a.target = '_blank';
-    a.rel = 'nofollow';
-    
-    // Move all fragment content into the link
-    while (fragment.firstChild) {
-      a.appendChild(fragment.firstChild);
+      
+      if (!alreadyLinked) {
+        const a = document.createElement('a');
+        a.href = link;
+        a.target = '_blank';
+        a.rel = 'nofollow';
+        node.parentNode?.insertBefore(a, node);
+        a.appendChild(node);
+        createdLinks.push(a);
+      }
     }
-    
-    // Delete the original range content
-    rangyRange.deleteContents();
-    
-    // Insert the link
-    rangyRange.insertNode(a);
 
     console.log('Link inserted successfully');
     
-    // Select the newly created link
-    const nativeSel = window.getSelection();
-    if (nativeSel) {
-      const newRange = document.createRange();
-      newRange.selectNodeContents(a);
+    // Keep selection on the linked text AND save it for other tools
+    if (createdLinks.length > 0) {
+      const firstLink = createdLinks[0];
+      const lastLink = createdLinks[createdLinks.length - 1];
       
-      nativeSel.removeAllRanges();
-      nativeSel.addRange(newRange);
+      // Create new range selecting the links
+      const nativeSel = window.getSelection();
+      if (nativeSel) {
+        const newRange = document.createRange();
+        newRange.setStart(firstLink, 0);
+        newRange.setEnd(lastLink, lastLink.childNodes.length);
+        
+        nativeSel.removeAllRanges();
+        nativeSel.addRange(newRange);
+        
+        // Save this selection for Bold/Italic tools
+        console.log('Link - saving new selection on inserted link');
+        SelectionManager.clearSelection(); // Clear old markers first
+        SelectionManager.saveSelection();
+      }
+    }
+  }
+
+  private removeLink(): void {
+    console.log('Link - removeLink called');
+    
+    const anchorTag = this.findParentTag('A');
+    if (anchorTag) {
+      // Expand selection to cover the entire link
+      this.expandToTag(anchorTag);
       
-      // Save this selection for Bold/Italic tools
-      console.log('Link - saving new selection on inserted link');
-      SelectionManager.clearSelection(); // Clear old markers first
-      SelectionManager.saveSelection();
+      // Remove the link
+      this.unlink();
+      
+      // Close the input
+      this.closeActions();
+      
+      // Update button state
+      this.checkState();
+      
+      // Close toolbar
+      this.toolbar.close();
     }
   }
 
