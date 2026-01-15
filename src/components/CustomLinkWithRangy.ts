@@ -72,17 +72,43 @@ export default class CustomLinkWithRangy implements InlineTool {
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '5px';
     
+    // Prevent clicks on wrapper from bubbling up
+    wrapper.addEventListener('click', (event: MouseEvent) => {
+      event.stopPropagation();
+    });
+    
+    wrapper.addEventListener('mousedown', (event: MouseEvent) => {
+      event.stopPropagation();
+    });
+    
     // Create input
     const input = document.createElement('input') as HTMLInputElement;
     input.placeholder = this.i18n.t('Add a link');
     input.enterKeyHint = 'done';
     input.classList.add(this.CSS.input);
     input.style.flex = '1';
+    
+    // Prevent input events from bubbling up and causing unwanted behavior
+    input.addEventListener('click', (event: MouseEvent) => {
+      event.stopPropagation();
+    });
+    
+    input.addEventListener('mousedown', (event: MouseEvent) => {
+      event.stopPropagation();
+    });
+    
     input.addEventListener('keydown', (event: KeyboardEvent) => {
       if (event.keyCode === this.ENTER_KEY) {
         this.enterPressed(event);
       }
+      // Don't let other key events bubble up
+      event.stopPropagation();
     });
+    
+    input.addEventListener('input', (event: Event) => {
+      event.stopPropagation();
+    });
+    
     this.nodes.input = input;
     
     // Create unlink button
