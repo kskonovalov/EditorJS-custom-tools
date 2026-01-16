@@ -174,8 +174,11 @@ export default class CustomLinkWithRangy implements InlineTool {
         this.nodes.button.classList.add(this.CSS.buttonUnlink);
         this.nodes.button.classList.add(this.CSS.buttonActive);
       }
-      // Не визуально оборачивать если уже внутри ссылки
-      this.openActions(false, true);
+      
+      // Открывать input только если он ещё не открыт
+      if (!this.inputOpened) {
+        this.openActions(false, true);
+      }
 
       const hrefAttr = anchorTag.getAttribute('href');
       if (this.nodes.input) {
