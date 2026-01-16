@@ -142,7 +142,6 @@ export default class CustomClearFormat implements InlineTool {
   }
 
   public checkState(): boolean {
-    SelectionManager.saveSelection();
     return false; // Never show as active
   }
 

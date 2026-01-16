@@ -131,8 +131,6 @@ export default class CustomItalic implements InlineTool {
   }
 
   public checkState(): boolean {
-    // Сохранить выделение с помощью глобального менеджера (предотвращает множественные сохранения)
-    SelectionManager.saveSelection();
     
     const sel = SelectionManager.getSelection();
     if (!sel || sel.rangeCount === 0) {

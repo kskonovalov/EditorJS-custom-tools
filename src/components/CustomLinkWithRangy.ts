@@ -57,6 +57,7 @@ export default class CustomLinkWithRangy implements InlineTool {
   }
 
   public render(): HTMLElement {
+    console.log('render');
     const button = document.createElement('button') as HTMLButtonElement;
     button.type = 'button';
     button.classList.add(this.CSS.button, this.CSS.buttonModifier);
@@ -66,6 +67,7 @@ export default class CustomLinkWithRangy implements InlineTool {
   }
 
   public renderActions(): HTMLElement {
+    console.log('renderActions');
     // Создать контейнер для input и кнопок
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
@@ -154,15 +156,16 @@ export default class CustomLinkWithRangy implements InlineTool {
   }
 
   public surround(): void {
+    // Сохранить выделение перед открытием input (чтобы не потерять его при фокусе на input)
+    SelectionManager.saveSelection();
+    
     // Просто переключить поле ввода
     // Удаление ссылки теперь обрабатывается кнопкой X внутри input
     this.toggleActions();
   }
 
   public checkState(): boolean {
-    // Сохранить выделение с помощью глобального менеджера (предотвращает множественные сохранения)
-    SelectionManager.saveSelection();
-    
+    console.log('checkState');
     const anchorTag = this.findParentTag('A');
 
     if (anchorTag) {
@@ -371,7 +374,7 @@ export default class CustomLinkWithRangy implements InlineTool {
       // Вставить span обратно в DOM между маркерами
       range.insertNode(visualSpan);
       
-    } catch (err) {
+    } catch {
       // Игнорировать ошибки
     }
   }
